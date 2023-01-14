@@ -14,7 +14,7 @@ load_dotenv(dotenv_path=Path('../.env'))
 
 
 class AppSettings(BaseSettings):
-    app_title: str = "UrlShortener"
+    app_title: str = "Url shortener API"
     database_dsn: PostgresDsn = os.getenv(
         'DATABASE_DSN',
         'postgresql+asyncpg://postgres:postgres@localhost:5432/postgres'

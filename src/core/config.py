@@ -28,3 +28,4 @@ class AppSettings(BaseSettings):
 
 app_settings = AppSettings()
 BASE_DIR = Path(__file__).parent.parent
+SHORT_URL_LENGTH = 8

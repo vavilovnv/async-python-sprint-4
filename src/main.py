@@ -6,6 +6,7 @@ from fastapi.responses import ORJSONResponse
 from api import links
 from core.config import app_settings
 
+
 app = FastAPI(
     title=app_settings.app_title,
     docs_url='/api/openapi',

@@ -1,14 +1,35 @@
+from datetime import datetime
 from pydantic import BaseModel, HttpUrl
 
 
 class URLBase(BaseModel):
-    target_url: HttpUrl
+    original_url: HttpUrl
+
+
+class MultiUrl(BaseModel):
+    __root__: list[URLBase]
+
+
+class ShortUrl(BaseModel):
+    url_id: str
+    short_url: HttpUrl
 
     class Config:
         orm_mode = True
 
 
-class URL(URLBase):
-    short_url: str
+class MultiShortUrl(BaseModel):
+    __root__: list[ShortUrl]
+
+
+class ShortUrlInfo(ShortUrl):
     is_active: bool
-    clicks: int
+    created_at: datetime
+
+
+class LinkUsage(BaseModel):
+    use_at: datetime
+    client: str
+
+    class Config:
+        orm_mode = True

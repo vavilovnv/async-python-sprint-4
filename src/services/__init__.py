@@ -1,1 +1,1 @@
-from .link import link_crud
+from .link import RepositoryLink, link_crud

@@ -1,8 +1,9 @@
+import time
 from secrets import choice
 from string import ascii_uppercase
-from typing import Any, Generic, Type, TypeVar
+from typing import Any, Generic, Optional, Type, TypeVar, Union
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel
 from sqlalchemy import exc
@@ -27,10 +28,19 @@ class Repository:
     def get(self, *args, **kwargs):
         raise NotImplementedError
 
+    def get_ping_db(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def get_status(self, *args, **kwargs):
+        raise NotImplementedError
+
     def create(self, *args, **kwargs):
         raise NotImplementedError
 
     def create_multi(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def create_link_usage(self, *args, **kwargs):
         raise NotImplementedError
 
     def delete(self, *args, **kwargs):
@@ -99,3 +109,47 @@ class RepositoryDBLink(
     async def delete(db: AsyncSession, db_obj: ModelType) -> None:
         setattr(db_obj, 'is_active', False)
         await db.commit()
+
+    @staticmethod
+    async def update_usage_count(db: AsyncSession, db_obj: ModelType) -> None:
+        db_obj.usages_count += 1
+        await db.commit()
+        await db.refresh(db_obj)
+
+    async def create_link_usage(
+            self,
+            db: AsyncSession,
+            link_id: int,
+            request: Request
+    ):
+        request_obj = self._request_model(
+            link=link_id,
+            client=f'{request.client.host}:{request.client.port}'
+        )
+        db.add(request_obj)
+        await db.commit()
+        await db.refresh(request_obj)
+
+    async def get_ping_db(self, db: AsyncSession):
+        start = time.time()
+        statement = select(self._model)
+        await db.execute(statement=statement)
+        return {'ping_db': '{:.5f}'.format(time.time() - start)}
+
+    async def get_status(
+            self,
+            db: AsyncSession,
+            db_obj: ModelType,
+            limit: int,
+            offset: int,
+            full_info: Optional[bool],
+    ) -> Union[int, list[ModelType]]:
+        if not full_info:
+            return db_obj.usages_count
+        statement = select(
+            self._request_model
+        ).where(
+            self._request_model.link == db_obj.id
+        ).offset(offset).limit(limit)
+        res = await db.execute(statement=statement)
+        return res.scalars().all()

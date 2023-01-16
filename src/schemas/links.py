@@ -5,6 +5,9 @@ from pydantic import BaseModel, HttpUrl
 class URLBase(BaseModel):
     original_url: HttpUrl
 
+    class Config:
+        orm_mode = True
+
 
 class MultiUrl(BaseModel):
     __root__: list[URLBase]
@@ -33,3 +36,23 @@ class LinkUsage(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class Ping(BaseModel):
+    ping_db: float
+
+
+class UsagesCount(BaseModel):
+    usages_count: int
+
+
+class LinkUsage(BaseModel):
+    use_at: datetime
+    client: str
+
+    class Config:
+        orm_mode = True
+
+
+class LinksUsages(BaseModel):
+    __root__: list[LinkUsage]

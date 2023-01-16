@@ -1,18 +1,27 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import relationship, synonym
+from sqlalchemy_utils import URLType
 
-from core.config import SHORT_URL_LENGTH
-
-Base = declarative_base()
+from db import Base
 
 
-class Links(Base):
+class Link(Base):
     __tablename__ = 'links'
     id = Column(Integer, primary_key=True)
-    target_url = Column(String(1000), nullable=False)
-    short_url = Column(String(SHORT_URL_LENGTH), nullable=False)
-    clicks = Column(Integer)
-    is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, index=True, default=datetime.utcnow)
+    original_url = Column(URLType, nullable=False)
+    short_url = Column(URLType, nullable=False)
+    url_id = Column(String(8), index=True, nullable=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    usages_count = Column(Integer)
+    link_usages = relationship('LinksUsage', cascade="all, delete")
+
+
+class LinksUsage(Base):
+    __tablename__ = "links_usages"
+    id = Column(Integer, primary_key=True)
+    link = Column(Integer, ForeignKey('links.id'))
+    client = Column(String, nullable=False)
+    use_at = Column(DateTime, index=True, default=datetime.utcnow)

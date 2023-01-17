@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -12,7 +12,7 @@ from services import link_crud
 router = APIRouter()
 
 
-def validate_link(obj: Link):
+def validate_link(obj: Link) -> None:
     if not obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -24,8 +24,8 @@ def validate_link(obj: Link):
         )
 
 
-@router.get('/ping', response_model=links.Ping)
-async def check_db(db: AsyncSession = Depends(get_session)):
+@router.get('/ping', response_model=links.Ping, tags=['Service'])
+async def check_db(db: AsyncSession = Depends(get_session)) -> Any:
     res = await link_crud.get_ping_db(db=db)
     return res
 
@@ -37,7 +37,7 @@ async def get_url(
         url_id: str,
         request: Request,
         db: AsyncSession = Depends(get_session)
-):
+) -> Any:
     obj = await link_crud.get(db=db, url_id=url_id)
     validate_link(obj=obj)
     await link_crud.update_usage_count(db=db, db_obj=obj)
@@ -71,7 +71,7 @@ async def get_url_status(
             description='Query offset.'
         ),
         db: AsyncSession = Depends(get_session),
-):
+) -> Any:
     obj = await link_crud.get(db=db, url_id=url_id)
     validate_link(obj=obj)
     res = await link_crud.get_status(
@@ -87,7 +87,7 @@ async def get_url_status(
 
 
 @router.get('/')
-def read_root():
+def read_root() -> str:
     return 'Welcome to the URL shortener API'
 
 
@@ -99,7 +99,7 @@ def read_root():
 async def create_short_url(
         target_url: links.URLBase,
         db: AsyncSession = Depends(get_session)
-):
+) -> Any:
     res = await link_crud.create(db=db, obj_in=target_url)
     return res
 
@@ -112,7 +112,7 @@ async def create_short_url(
 async def create_short_urls(
         target_urls: links.MultiUrl,
         db: AsyncSession = Depends(get_session)
-):
+) -> Any:
     res = await link_crud.create_multi(db=db, obj_in=target_urls)
     return res
 
@@ -124,7 +124,7 @@ async def create_short_urls(
 async def delete_short_url(
         url_id: str,
         db: AsyncSession = Depends(get_session)
-):
+) -> Any:
     obj = await link_crud.get(db=db, url_id=url_id)
     validate_link(obj=obj)
     await link_crud.delete(db=db, db_obj=obj)

@@ -5,7 +5,7 @@ from typing import Any, Generic, Optional, Type, TypeVar, Union
 
 from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from sqlalchemy import exc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -19,8 +19,17 @@ CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 MultiCreateSchemaType = TypeVar("MultiCreateSchemaType", bound=BaseModel)
 
 
-def create_short_url(url_length):
+def create_short_url(url_length: int) -> str:
     return ''.join([choice(ascii_uppercase) for _ in range(url_length)])
+
+
+def extend_data(data: dict[str, [HttpUrl, str, 0]]) -> None:
+    short_form = create_short_url(SHORT_URL_LENGTH)
+    data['url_id'] = short_form
+    data['usages_count'] = 0
+    short_url = (f'http://{app_settings.project_host}:'
+                 f'{app_settings.project_port}/api/v1/{short_form}')
+    data['short_url'] = short_url
 
 
 class Repository:
@@ -68,10 +77,7 @@ class RepositoryDBLink(
 
     async def create(self, db: AsyncSession, obj_in: CreateSchemaType) -> ModelType:
         data = jsonable_encoder(obj_in)
-        short_form = create_short_url(SHORT_URL_LENGTH)
-        data['url_id'] = short_form
-        data['usages_count'] = 0
-        data['short_url'] = f'http://{app_settings.project_host}:{app_settings.project_port}/api/v1/{short_form}'
+        extend_data(data)
         db_obj = self._model(**data)
         try:
             db.add(db_obj)
@@ -88,10 +94,7 @@ class RepositoryDBLink(
         res = []
         obj_in_data = jsonable_encoder(obj_in)
         for data in obj_in_data:
-            short_form = create_short_url(SHORT_URL_LENGTH)
-            data['url_id'] = short_form
-            data['usages_count'] = 0
-            data['short_url'] = f'http://{app_settings.project_host}:{app_settings.project_port}/api/v1/{short_form}'
+            extend_data(data)
             db_obj = self._model(**data)
             try:
                 db.add(db_obj)
@@ -121,7 +124,7 @@ class RepositoryDBLink(
             db: AsyncSession,
             link_id: int,
             request: Request
-    ):
+    ) -> None:
         request_obj = self._request_model(
             link=link_id,
             client=f'{request.client.host}:{request.client.port}'
@@ -130,7 +133,7 @@ class RepositoryDBLink(
         await db.commit()
         await db.refresh(request_obj)
 
-    async def get_ping_db(self, db: AsyncSession):
+    async def get_ping_db(self, db: AsyncSession) -> dict[str, float]:
         start = time.time()
         statement = select(self._model)
         await db.execute(statement=statement)

@@ -1,33 +1,27 @@
+import logging.config
 from typing import Any, Optional, Union
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from core.logger import LOGGING
 from db import get_session
-from models import Link
 from schemas import links
 from services import link_crud
 
+from .utils import validate_link
+
 router = APIRouter()
 
-
-def validate_link(obj: Link) -> None:
-    if not obj:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='Url not found'
-        )
-    if not obj.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_410_GONE, detail='Url deleted'
-        )
+logging.config.dictConfig(LOGGING)
+logger = logging.getLogger('short_url_api_logger')
 
 
 @router.get('/ping', response_model=links.Ping, tags=['Service'])
 async def check_db(db: AsyncSession = Depends(get_session)) -> Any:
-    res = await link_crud.get_ping_db(db=db)
-    return res
+    logger.info('A ping to the DB is requested')
+    return await link_crud.get_ping_db(db=db)
 
 
 @router.get(
@@ -45,6 +39,9 @@ async def get_url(
         db=db,
         link_id=obj.id,
         request=request
+    )
+    logger.info(
+        'Redirect from %s to %s', obj.short_url, obj.original_url
     )
     return obj.original_url
 
@@ -82,12 +79,18 @@ async def get_url_status(
         full_info=full_info
     )
     if isinstance(res, int):
-        return JSONResponse(status_code=status.HTTP_200_OK, content={'usages_count': res})
+        logger.info('Sent short status for url_id %s', url_id)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={'usages_count': res}
+        )
+    logger.info('Sent full status for url_id %s', url_id)
     return res
 
 
 @router.get('/')
 def read_root() -> str:
+    logger.info('Root api url is requested')
     return 'Welcome to the URL shortener API'
 
 
@@ -100,8 +103,11 @@ async def create_short_url(
         target_url: links.URLBase,
         db: AsyncSession = Depends(get_session)
 ) -> Any:
-    res = await link_crud.create(db=db, obj_in=target_url)
-    return res
+    obj = await link_crud.create(db=db, obj_in=target_url)
+    logger.info(
+        'Created short url %s for %s', obj.short_url, obj.original_url
+    )
+    return obj
 
 
 @router.post(
@@ -113,8 +119,8 @@ async def create_short_urls(
         target_urls: links.MultiUrl,
         db: AsyncSession = Depends(get_session)
 ) -> Any:
-    res = await link_crud.create_multi(db=db, obj_in=target_urls)
-    return res
+    logger.info('Created a batch links of short url')
+    return await link_crud.create_multi(db=db, obj_in=target_urls)
 
 
 @router.delete(
@@ -128,4 +134,5 @@ async def delete_short_url(
     obj = await link_crud.get(db=db, url_id=url_id)
     validate_link(obj=obj)
     await link_crud.delete(db=db, db_obj=obj)
+    logger.info('Short url with url_id %s deleted', url_id)
     return obj

@@ -1,12 +1,11 @@
 import os
-
-from dotenv import load_dotenv
 from logging import config as logging_config
 from pathlib import Path
+
+from dotenv import load_dotenv
 from pydantic import BaseSettings, PostgresDsn
 
 from core.logger import LOGGING
-
 
 logging_config.dictConfig(LOGGING)
 

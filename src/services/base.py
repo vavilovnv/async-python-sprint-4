@@ -1,35 +1,21 @@
 import time
-from secrets import choice
-from string import ascii_uppercase
 from typing import Any, Generic, Optional, Type, TypeVar, Union
 
 from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 from sqlalchemy import exc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.config import SHORT_URL_LENGTH, app_settings
 from db import Base
+
+from .utils import extend_data
 
 ModelType = TypeVar("ModelType", bound=Base)
 RequestTypeModel = TypeVar("RequestTypeModel", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 MultiCreateSchemaType = TypeVar("MultiCreateSchemaType", bound=BaseModel)
-
-
-def create_short_url(url_length: int) -> str:
-    return ''.join([choice(ascii_uppercase) for _ in range(url_length)])
-
-
-def extend_data(data: dict[str, [HttpUrl, str, 0]]) -> None:
-    short_form = create_short_url(SHORT_URL_LENGTH)
-    data['url_id'] = short_form
-    data['usages_count'] = 0
-    short_url = (f'http://{app_settings.project_host}:'
-                 f'{app_settings.project_port}/api/v1/{short_form}')
-    data['short_url'] = short_url
 
 
 class Repository:
@@ -75,7 +61,11 @@ class RepositoryDBLink(
         results = await db.execute(statement=statement)
         return results.scalar_one_or_none()
 
-    async def create(self, db: AsyncSession, obj_in: CreateSchemaType) -> ModelType:
+    async def create(
+            self,
+            db: AsyncSession,
+            obj_in: CreateSchemaType
+    ) -> ModelType:
         data = jsonable_encoder(obj_in)
         extend_data(data)
         db_obj = self._model(**data)
@@ -90,7 +80,11 @@ class RepositoryDBLink(
         await db.refresh(db_obj)
         return db_obj
 
-    async def create_multi(self, db: AsyncSession, obj_in: MultiCreateSchemaType) -> list[ModelType]:
+    async def create_multi(
+            self,
+            db: AsyncSession,
+            obj_in: MultiCreateSchemaType
+    ) -> list[ModelType]:
         res = []
         obj_in_data = jsonable_encoder(obj_in)
         for data in obj_in_data:

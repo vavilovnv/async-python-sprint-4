@@ -1,5 +1,4 @@
 import uvicorn
-
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -7,7 +6,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from api import links
 from core.config import BLACK_LIST, app_settings
 from middlewares.black_list import BlackListMiddleware
-
 
 app = FastAPI(
     title=app_settings.app_title,

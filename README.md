@@ -105,3 +105,34 @@ GET /<url_id>/status?[full-info]&&[max-result=10]&&[offset=0]
 4. Приведите стиль кода в соответствие pep8, flake8, mypy. 
 5. Логируйте результаты действий. 
 6. Покройте написанный код тестами. 
+
+## Установка и запуск
+
+1. Установить зависимости:
+```
+pip install -r requirements.txt
+```
+2. Запустить контейнер "postgres-fastapi":
+```
+docker run \
+  --rm   \
+  --name postgres-fastapi \
+  -p 5432:5432 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=collection \
+  -d postgres:14.5 
+```
+3. Создать миграции:
+```
+alembic revision --autogenerate -m 01_initial_db
+```
+4. Выполнить миграции:
+```
+alembic upgrade head
+```
+5. Запустить на исполнение main.py
+```
+python3 ./src/main.py
+```
+Документация в формате Swagger доступна по адресу http://127.0.0.1:8080/api/openapi.

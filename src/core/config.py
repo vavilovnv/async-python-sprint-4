@@ -9,7 +9,8 @@ from core.logger import LOGGING
 
 logging_config.dictConfig(LOGGING)
 
-load_dotenv(dotenv_path=Path('../.env'))
+if not load_dotenv(dotenv_path=Path('../.env')):
+    load_dotenv(dotenv_path=Path('./.env'))
 
 
 class StandaloneApplication(WSGIApplication):
@@ -34,10 +35,8 @@ class AppSettings(BaseSettings):
                                  'postgres@localhost:5432/postgres')
     project_host: str = '0.0.0.0'
     project_port: int = 8000
-    base_dir: PosixPath = Path(__file__).parent.parent
     short_url_length: int = 8
     black_list: list[str] = [
-        # '127.0.0.1',
         '192.168.1.106'
     ]
 

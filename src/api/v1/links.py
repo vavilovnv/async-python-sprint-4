@@ -18,7 +18,12 @@ logging.config.dictConfig(LOGGING)
 logger = logging.getLogger('short_url_api_logger')
 
 
-@router.get('/ping', response_model=links.Ping, tags=['Service'])
+@router.get(
+    '/ping',
+    response_model=links.Ping,
+    tags=['Service'],
+    description='Execute a database ping.'
+)
 async def check_db(db: AsyncSession = Depends(get_session)) -> Any:
     logger.info('A ping to the DB is requested')
     return await link_crud.get_ping_db(db=db)
@@ -26,7 +31,10 @@ async def check_db(db: AsyncSession = Depends(get_session)) -> Any:
 
 @router.get(
     '/{url_id}',
-    response_class=RedirectResponse)
+    response_class=RedirectResponse,
+    tags=['Links'],
+    description='Redirect to the original url, if it exists.'
+)
 async def get_url(
         url_id: str,
         request: Request,
@@ -51,7 +59,11 @@ async def get_url(
     response_model=Union[
         links.UsagesCount,
         links.LinksUsages
-    ]
+    ],
+    tags=['Links'],
+    description="Getting the amount of url usage by url_id. With the "
+                "'full-info' parameter, the client's host and the time of url "
+                "usage are displayed."
 )
 async def get_url_status(
         url_id: str,
@@ -88,7 +100,12 @@ async def get_url_status(
     return res
 
 
-@router.get('/')
+@router.get(
+    '/',
+    tags=['Links'],
+    description='Displaying the welcome message when navigating to the root '
+                'url.'
+)
 def read_root() -> str:
     logger.info('Root api url is requested')
     return 'Welcome to the URL shortener API'
@@ -97,7 +114,9 @@ def read_root() -> str:
 @router.post(
     '/',
     status_code=status.HTTP_201_CREATED,
-    response_model=links.ShortUrl
+    response_model=links.ShortUrl,
+    tags=['Links'],
+    description='Create and return short url for the original url.'
 )
 async def create_short_url(
         target_url: links.URLBase,
@@ -113,7 +132,9 @@ async def create_short_url(
 @router.post(
     '/shorten',
     status_code=status.HTTP_201_CREATED,
-    response_model=links.MultiShortUrl
+    response_model=links.MultiShortUrl,
+    tags=['Links'],
+    description='Create and return the batch short urls for the original url.'
 )
 async def create_short_urls(
         target_urls: links.MultiUrl,
@@ -125,7 +146,9 @@ async def create_short_urls(
 
 @router.delete(
     '/{url_id}',
-    response_model=links.ShortUrl
+    response_model=links.ShortUrl,
+    tags=['Links'],
+    description='Mark as delete the short url for url_id.'
 )
 async def delete_short_url(
         url_id: str,

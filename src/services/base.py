@@ -1,4 +1,5 @@
 import time
+from abc import ABC, abstractmethod
 from typing import Any, Generic, Optional, Type, TypeVar, Union
 
 from fastapi import HTTPException, Request, status
@@ -10,7 +11,7 @@ from sqlalchemy.future import select
 
 from db import Base
 
-from .utils import extend_data
+from .utils import create_obj
 
 ModelType = TypeVar("ModelType", bound=Base)
 RequestTypeModel = TypeVar("RequestTypeModel", bound=Base)
@@ -18,26 +19,34 @@ CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 MultiCreateSchemaType = TypeVar("MultiCreateSchemaType", bound=BaseModel)
 
 
-class Repository:
+class Repository(ABC):
 
+    @abstractmethod
     def get(self, *args, **kwargs):
         raise NotImplementedError
 
+    @abstractmethod
     def get_ping_db(self, *args, **kwargs):
         raise NotImplementedError
 
+    @abstractmethod
     def get_status(self, *args, **kwargs):
         raise NotImplementedError
 
+    @abstractmethod
     def create(self, *args, **kwargs):
         raise NotImplementedError
 
+    @abstractmethod
     def create_multi(self, *args, **kwargs):
         raise NotImplementedError
 
+    @abstractmethod
     def create_link_usage(self, *args, **kwargs):
         raise NotImplementedError
 
+    @staticmethod
+    @abstractmethod
     def delete(self, *args, **kwargs):
         raise NotImplementedError
 
@@ -67,40 +76,36 @@ class RepositoryDBLink(
             obj_in: CreateSchemaType
     ) -> ModelType:
         data = jsonable_encoder(obj_in)
-        extend_data(data)
-        db_obj = self._model(**data)
+        db_object = create_obj(data, self._model)
         try:
-            db.add(db_obj)
+            db.add(db_object)
             await db.commit()
         except exc.SQLAlchemyError as error:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=error
             )
-        await db.refresh(db_obj)
-        return db_obj
+        await db.refresh(db_object)
+        return db_object
 
     async def create_multi(
             self,
             db: AsyncSession,
             obj_in: MultiCreateSchemaType
     ) -> list[ModelType]:
-        res = []
-        obj_in_data = jsonable_encoder(obj_in)
-        for data in obj_in_data:
-            extend_data(data)
-            db_obj = self._model(**data)
-            try:
-                db.add(db_obj)
-                await db.commit()
-            except exc.SQLAlchemyError as error:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=error
-                )
-            await db.refresh(db_obj)
-            res.append(db_obj)
-        return res
+        list_data = jsonable_encoder(obj_in)
+        db_objects = [create_obj(data, self._model) for data in list_data]
+        try:
+            db.add_all(db_objects)
+            await db.commit()
+        except exc.SQLAlchemyError as error:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=error
+            )
+        for obj in db_objects:
+            await db.refresh(obj)
+        return db_objects
 
     @staticmethod
     async def delete(db: AsyncSession, db_obj: ModelType) -> None:

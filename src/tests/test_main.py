@@ -2,10 +2,12 @@ import pytest
 from fastapi import status
 from httpx import AsyncClient
 
-from core.config import SHORT_URL_LENGTH
+from core.config import app_settings
 from main import app
 
 from .utils import COUNT_LINKS, ID_LINKS, LINKS
+
+SHORT_URL_LENGTH = app_settings.short_url_length
 
 
 @pytest.mark.asyncio()

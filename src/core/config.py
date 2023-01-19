@@ -1,8 +1,8 @@
-import os
 from logging import config as logging_config
-from pathlib import Path
+from pathlib import Path, PosixPath
 
 from dotenv import load_dotenv
+from gunicorn.app.wsgiapp import WSGIApplication
 from pydantic import BaseSettings, PostgresDsn
 
 from core.logger import LOGGING
@@ -12,23 +12,37 @@ logging_config.dictConfig(LOGGING)
 load_dotenv(dotenv_path=Path('../.env'))
 
 
+class StandaloneApplication(WSGIApplication):
+    def __init__(self, app_uri, options=None):
+        self.options = options or {}
+        self.app_uri = app_uri
+        super().__init__()
+
+    def load_config(self):
+        config = {
+            key: value
+            for key, value in self.options.items()
+            if key in self.cfg.settings and value is not None
+        }
+        for key, value in config.items():
+            self.cfg.set(key.lower(), value)
+
+
 class AppSettings(BaseSettings):
     app_title: str = "Url shortener API"
-    database_dsn: PostgresDsn = os.getenv(
-        'DATABASE_DSN',
-        'postgresql+asyncpg://postgres:postgres@localhost:5432/postgres'
-    )
-    project_host: str = os.getenv('PROJECT_HOST', '0.0.0.0')
-    project_port: int = int(os.getenv('PROJECT_PORT', '8000'))
+    database_dsn: PostgresDsn = ('postgresql+asyncpg://postgres:'
+                                 'postgres@localhost:5432/postgres')
+    project_host: str = '0.0.0.0'
+    project_port: int = 8000
+    base_dir: PosixPath = Path(__file__).parent.parent
+    short_url_length: int = 8
+    black_list: list[str] = [
+        # '127.0.0.1',
+        '192.168.1.106'
+    ]
 
     class Config:
         env_file = '.env'
 
 
 app_settings = AppSettings()
-BASE_DIR = Path(__file__).parent.parent
-SHORT_URL_LENGTH = 8
-BLACK_LIST = [
-    # '127.0.0.1',
-    '192.168.1.106'
-]

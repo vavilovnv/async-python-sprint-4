@@ -8,6 +8,7 @@ from main import app
 from .utils import COUNT_LINKS, ID_LINKS, LINKS
 
 SHORT_URL_LENGTH = app_settings.short_url_length
+BLACK_LIST = app_settings.black_list
 
 
 @pytest.mark.asyncio()
@@ -95,3 +96,14 @@ async def test_get_url_status(client: AsyncClient) -> None:
     assert len(data) == 1, 'Link usage is not equal 1'
     assert data[0].get("client")
     assert data[0].get("use_at")
+
+
+@pytest.mark.asyncio()
+async def test_black_list_mw(client: AsyncClient) -> None:
+    BLACK_LIST.append('127.0.0.1')
+    response = await client.post(
+        app.url_path_for("create_short_url"),
+        json={'original_url': LINKS[2]}
+    )
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    BLACK_LIST.remove('127.0.0.1')

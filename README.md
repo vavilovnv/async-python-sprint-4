@@ -1,3 +1,5 @@
+![example workflow](https://github.com/vavilovnv/async-python-sprint-4/actions/workflows/app-testing.yml/badge.svg)  
+
 # Проектное задание четвертого спринта
 
 Спроектируйте и реализуйте сервис для создания сокращенной формы передаваемых URL и анализа активности их использования.

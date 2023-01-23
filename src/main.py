@@ -22,10 +22,7 @@ black_list_mw = BlackListMiddleware(black_list=app_settings.black_list)
 app.add_middleware(BaseHTTPMiddleware, dispatch=black_list_mw)
 
 if __name__ == '__main__':
-    """
-    Не уверен, что реализация ниже верная, но мне она показалась более всего
-    понятной из того, что удалось нагуглить и накопать в документации.
-    """
+
     options = {
         "bind": f'{app_settings.project_host}:{app_settings.project_port}',
         "workers": multiprocessing.cpu_count(),

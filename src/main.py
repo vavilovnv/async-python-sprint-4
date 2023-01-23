@@ -22,7 +22,6 @@ black_list_mw = BlackListMiddleware(black_list=app_settings.black_list)
 app.add_middleware(BaseHTTPMiddleware, dispatch=black_list_mw)
 
 if __name__ == '__main__':
-
     options = {
         "bind": f'{app_settings.project_host}:{app_settings.project_port}',
         "workers": multiprocessing.cpu_count(),
